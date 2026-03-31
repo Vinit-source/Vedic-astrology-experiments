@@ -1,2 +1,326 @@
-# Vedic-Astrology-experiments
-An experiment to make Vedic astrology digitally accessible.
+# Vedic Astrology MCP Server
+
+An MCP (Model Context Protocol) server for authentic Vedic astrology calculations using the [jyotishganit](https://github.com/northtara/jyotishganit) library. This server enables LLMs and CLI tools to perform precise astrological analysis based on birth data.
+
+## Features
+
+This MCP server provides comprehensive Vedic astrology tools including:
+
+### Basic Birth Details
+- Name, Date, Time, and Place of birth
+- Latitude and Longitude coordinates
+- Timezone information
+- Sunrise and Sunset times
+- Ayanamsha (sidereal offset) value
+
+### Panchanga (Five-Limb Almanac)
+- **Tithi** - Lunar day
+- **Nakshatra** - Lunar constellation (with Pada/quarter)
+- **Yoga** - Sun-Moon combination
+- **Karana** - Half lunar day
+- **Vaara** - Weekday
+
+### Avakhada Details
+- **Varna** - Social classification
+- **Vashya** - Influence type
+- **Yoni** - Animal nature
+- **Gan** - Temperament (Deva/Manushya/Rakshasa)
+- **Nadi** - Pulse/energy type
+- **Sign** - Moon sign (Rashi)
+
+### Planetary Analysis
+- Positions of all 9 Vedic planets (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu)
+- Sign placement and degrees
+- Nakshatra and Pada for each planet
+- House placement
+- Sign lords
+- **Shadbala** - Six-fold planetary strength analysis:
+  - Positional Strength (Sthanabala)
+  - Temporal Strength (Kaalabala)
+  - Directional Strength (Digbala)
+  - Motional Strength (Cheshtabala)
+  - Natural Strength (Naisargikabala)
+  - Aspectual Strength (Drikbala)
+
+### Vimshottari Dashas
+- Current Mahadasha (major planetary period)
+- Current Antardasha (sub-period)
+- Upcoming Mahadasha periods with start and end dates
+
+### Divisional Charts (Vargas)
+Complete D1-D60 divisional chart calculations:
+- **D1** - Rasi (General life and personality)
+- **D2** - Hora (Wealth and finances)
+- **D3** - Drekkana (Siblings and courage)
+- **D4** - Chaturthamsa (Property and assets)
+- **D7** - Saptamsa (Children and progeny)
+- **D9** - Navamsa (Marriage and dharma)
+- **D10** - Dasamsa (Career and profession)
+- **D12** - Dwadasamsa (Parents and ancestors)
+- **D16** - Shodasamsa (Vehicles and comforts)
+- **D24** - Chaturvimsamsa (Education)
+- **D27** - Bhamsha (Physical strength)
+- **D30** - Trimsamsa (Misfortunes)
+- **D60** - Shashtiamsa (Past life karma)
+
+## Installation
+
+### Prerequisites
+- Python 3.8 or higher
+- pip package manager
+- Geoapify API key (free tier available at [geoapify.com](https://www.geoapify.com/))
+
+### Setup
+
+1. **Clone the repository:**
+```bash
+git clone https://github.com/Vinit-source/Vedic-astrology-experiments.git
+cd Vedic-astrology-experiments
+```
+
+2. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+The main dependencies are:
+- `jyotishganit` - Professional Vedic astrology calculation library with NASA JPL ephemeris
+- `mcp` - Model Context Protocol SDK
+- `requests` - HTTP library for geocoding API calls
+
+3. **Set up Geoapify API key:**
+
+The server uses Geoapify's geocoding API to automatically convert location names to coordinates and timezone information.
+
+Get your free API key from [geoapify.com](https://www.geoapify.com/) and set it as an environment variable:
+
+```bash
+export GEOAPIFY_API_KEY="your_api_key_here"
+```
+
+Or add it to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) for persistence.
+
+## Usage
+
+### Running the MCP Server
+
+The server communicates via stdio (standard input/output):
+
+```bash
+export GEOAPIFY_API_KEY="your_api_key_here"
+python vedic_astrology_server.py
+```
+
+### Using with VS Code
+
+To use this server with VS Code, add it to your VS Code MCP configuration file:
+
+**macOS:** `~/Library/Application Support/Code/User/mcp.json`
+
+The recommended configuration uses `uv` to manage Python environments reliably:
+
+```json
+{
+  "servers": {
+    "vedic-astrology": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "/absolute/path/to/vedic_astrology_server.py"
+      ],
+      "env": {
+        "GEOAPIFY_API_KEY": "your_geoapify_api_key_here"
+      },
+      "description": "Vedic Astrology MCP Server - Provides authentic astrological analysis using jyotishganit library with automatic location geocoding"
+    }
+  }
+}
+```
+
+Replace `/absolute/path/to/vedic_astrology_server.py` with the full path to the server file and `your_geoapify_api_key_here` with your Geoapify API key.
+
+### Alternative configuration using direct Python command:
+
+```json
+{
+  "servers": {
+    "vedic-astrology": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "/absolute/path/to/vedic_astrology_server.py"
+      ],
+      "env": {
+        "GEOAPIFY_API_KEY": "your_geoapify_api_key_here"
+      },
+      "description": "Vedic Astrology MCP Server - Provides authentic astrological analysis using jyotishganit library with automatic location geocoding"
+    }
+  }
+}
+```
+
+To use this server with Claude Desktop, add it to your Claude configuration file using the above config.
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%/Claude/claude_desktop_config.json`
+
+### Available Tools
+
+All tools now use **location-based input** - simply provide a location name (e.g., "Chennai", "New Delhi, India") and the server automatically geocodes it to get coordinates and timezone.
+
+#### 1. `calculate_complete_birth_chart`
+Returns a comprehensive birth chart with all astrological details including panchanga, planetary positions, divisional charts, dashas, and more.
+
+**Example:**
+```json
+{
+  "name": "Bhampu",
+  "year": 1996,
+  "month": 7,
+  "day": 4,
+  "hour": 9,
+  "minute": 10,
+  "second": 0,
+  "location": "Karmala, India"
+}
+```
+
+#### 2. `get_basic_details`
+Returns basic birth information including name, date, time, place, coordinates (auto-geocoded), timezone, and ayanamsha.
+
+#### 3. `get_panchanga_details`
+Returns Panchanga elements (Tithi, Nakshatra, Yoga, Karana, Vaara) and Avakhada details (Varna, Vashya, Yoni, Gan, Nadi).
+
+#### 4. `get_planetary_positions`
+Returns detailed positions of all 9 Vedic planets with their sign, degrees, nakshatra, pada, house, and Shadbala strengths.
+
+#### 5. `get_vimshottari_dashas`
+Returns current and upcoming Vimshottari Dasha periods (Mahadasha and Antardasha).
+
+#### 6. `get_divisional_charts`
+Returns all divisional charts (D1-D60) with planetary positions in each chart.
+
+### Example Usage with LLM
+
+When connected to an LLM (like Claude), you can ask questions like:
+
+- "Calculate the birth chart for a person born on July 4, 1996, at 9:10 AM in Karmala, India"
+- "What is the current Mahadasha for someone born on January 15, 1990, at 2:30 PM in New Delhi?"
+- "Show me the planetary positions and strengths for a birth in Chennai on March 1, 1985"
+- "What does the Navamsa chart show for me. My birth date is..."
+- "Get the Panchanga details for Vamshi born in Bangalore at..."
+
+**Note:** The server automatically geocodes location names to get precise coordinates and timezone information using Geoapify API.
+
+## Technical Details
+
+### Geocoding
+- Automatic location-to-coordinates conversion via Geoapify API
+- Supports city names, addresses, and location descriptions
+- Auto-detects timezone from location
+- Handles DST (Daylight Saving Time) automatically
+
+### Astronomical Accuracy
+- Uses NASA JPL DE421 ephemeris data via Skyfield
+- True Chitra Paksha Ayanamsa based on Spica star
+- Precise planetary positions accurate to arc-seconds
+- Traditional whole sign house system
+
+### Calculation Methods
+All calculations follow classical Vedic texts including:
+- Brihat Parashara Hora Shastra
+- Saravali
+- Surya Siddhanta
+
+### Data Storage
+Ephemeris data is cached in platform-appropriate locations:
+- **Windows:** `%LOCALAPPDATA%\jyotishganit\`
+- **macOS:** `~/Library/Application Support/jyotishganit/`
+- **Linux:** `~/.local/share/jyotishganit/`
+
+## Development
+
+### Project Structure
+```
+Vedic-astrology-experiments/
+├── vedic_astrology_server.py   # Main MCP server implementation
+├── requirements.txt             # Python dependencies
+├── README.md                    # This file
+├── .gitignore                   # Git ignore rules
+└── package.json                 # Node.js metadata (optional)
+```
+
+### Testing the Server
+
+You can test the server manually using a simple Python script:
+
+```python
+import asyncio
+import json
+from datetime import datetime
+from jyotishganit import calculate_birth_chart, get_birth_chart_json
+
+# Test birth data
+birth_date = datetime(1996, 7, 4, 9, 10, 0)
+chart = calculate_birth_chart(
+    birth_date=birth_date,
+    latitude=18.404,
+    longitude=75.195,
+    timezone_offset=5.5,
+    name="Test Person"
+)
+
+# Print results
+print(f"Ascendant: {chart.d1_chart.houses[0].sign}")
+print(f"Moon Sign: {chart.d1_chart.planets[1].sign}")
+print(f"Nakshatra: {chart.panchanga.nakshatra}")
+print(f"Tithi: {chart.panchanga.tithi}")
+```
+
+## Troubleshooting
+
+### MCP Server Won't Start
+
+**Issue:** `spawn python ENOENT` error in VS Code
+
+**Solution:** Use absolute paths to Python interpreters. VS Code MCP host may not resolve generic commands like `python`. Use:
+- `uv` (if installed via Homebrew or officially)
+- `/opt/homebrew/bin/python3` (macOS with Homebrew)
+- `/usr/local/bin/python3` (macOS)
+- The included `run_vedic_mcp_uv.sh` launcher script (recommended)
+
+### Geocoding Errors
+
+**Issue:** `GEOAPIFY_API_KEY environment variable not set`
+
+**Verify:**
+1. You have a Geoapify API key from [geoapify.com](https://www.geoapify.com/)
+2. The key is correctly set in your MCP configuration's `env` section
+3. Test by running: `export GEOAPIFY_API_KEY="your_key" && python vedic_astrology_server.py --check`
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+### Areas for Enhancement
+- Additional Dasha systems (Yogini, Chara, etc.)
+- Ashtakavarga calculations
+- Graha Drishti (planetary aspects)
+- Yoga combinations detection
+- Transit analysis
+- Muhurta (electional astrology)
+
+## License
+
+ISC License
+
+## Acknowledgments
+
+- **[jyotishganit](https://github.com/northtara/jyotishganit)** - Professional Vedic astrology library by [northtara](https://github.com/northtara)
+- **MCP** - Model Context Protocol by Anthropic
+- Built with reverence for the ancient science of Jyotisha
+
+---
+
+*॥ श्री कृष्णार्पणमस्तु ॥*
