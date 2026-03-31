@@ -1,2 +1,2 @@
-# Astrology-experiments
-An experiment to make Indian astrology digitally accessible.
+# Vedic-Astrology-experiments
+An experiment to make Vedic astrology digitally accessible.
