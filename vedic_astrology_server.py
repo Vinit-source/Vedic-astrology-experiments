@@ -11,8 +11,11 @@ This server provides tools to calculate and analyze Vedic birth charts, includin
 """
 
 import asyncio
+import argparse
 import json
 import os
+import signal
+import sys
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -580,5 +583,72 @@ async def main():
         )
 
 
+def parse_cli_args() -> argparse.Namespace:
+    """Parse CLI arguments for local diagnostics and startup behavior."""
+    parser = argparse.ArgumentParser(
+        description="Run the Vedic Astrology MCP server over stdio."
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Validate startup prerequisites and exit without starting the server.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress startup status logs to stderr.",
+    )
+    return parser.parse_args()
+
+
+def run_startup_check() -> int:
+    """Run a fast local check and exit with status code."""
+    print("Vedic Astrology MCP server startup check")
+    print("- Python module imports: OK")
+
+    geoapify_key = os.getenv("GEOAPIFY_API_KEY")
+    if geoapify_key:
+        print("- GEOAPIFY_API_KEY: set")
+    else:
+        print("- GEOAPIFY_API_KEY: not set (required when calling geocoding tools)")
+
+    print("- Status: OK")
+    return 0
+
+
+def _install_signal_handlers() -> None:
+    """Exit immediately on first termination signal for reliable MCP restarts."""
+
+    def _handle_termination(signum, _frame):
+        # Use an immediate exit path from signal context to avoid deadlocks/traces
+        # during interpreter finalization (notably stdio/thread shutdown).
+        try:
+            signame = signal.Signals(signum).name
+            os.write(2, f"[vedic-astrology-server] Received {signame}; exiting.\n".encode())
+        except Exception:
+            pass
+        os._exit(0)
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            signal.signal(sig, _handle_termination)
+        except Exception:
+            # Some environments may restrict signal registration; continue gracefully.
+            pass
+
+
 if __name__ == "__main__":
+    args = parse_cli_args()
+
+    if args.check:
+        raise SystemExit(run_startup_check())
+
+    if not args.quiet:
+        print(
+            "[vedic-astrology-server] MCP stdio server started; waiting for client requests...",
+            file=sys.stderr,
+        )
+
+    _install_signal_handlers()
+
     asyncio.run(main())

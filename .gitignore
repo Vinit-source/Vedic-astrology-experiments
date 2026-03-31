@@ -54,3 +54,6 @@ test_*.json
 # But keep configuration examples
 !claude_config_example.json
 !package.json
+
+
+.env
