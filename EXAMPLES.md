@@ -2,6 +2,8 @@
 
 This document provides example queries and use cases for the Vedic Astrology MCP server.
 
+**Note:** The server now uses location-based geocoding. Simply provide location names (e.g., "Chennai", "Mumbai") instead of coordinates and timezone. The Geoapify API automatically converts locations to precise coordinates and timezone information.
+
 ## Sample Birth Data
 
 Here are some sample birth details you can use for testing:
@@ -16,10 +18,7 @@ Here are some sample birth details you can use for testing:
   "hour": 9,
   "minute": 10,
   "second": 0,
-  "latitude": 18.404,
-  "longitude": 75.195,
-  "timezone_offset": 5.5,
-  "location_name": "Karmala, India"
+  "location": "Karmala, India"
 }
 ```
 
@@ -33,10 +32,21 @@ Here are some sample birth details you can use for testing:
   "hour": 14,
   "minute": 30,
   "second": 0,
-  "latitude": 28.6139,
-  "longitude": 77.2090,
-  "timezone_offset": 5.5,
-  "location_name": "New Delhi, India"
+  "location": "New Delhi, India"
+}
+```
+
+### Example 3: Mumbai Birth
+```json
+{
+  "name": "Test Person",
+  "year": 1985,
+  "month": 3,
+  "day": 20,
+  "hour": 6,
+  "minute": 45,
+  "second": 0,
+  "location": "Mumbai"
 }
 ```
 
@@ -47,43 +57,42 @@ Once the MCP server is configured with Claude Desktop, you can ask questions lik
 ### Complete Birth Chart Analysis
 ```
 Calculate the complete birth chart for a person named Bhampu, born on July 4, 1996,
-at 9:10 AM in Karmala, India (latitude: 18.404, longitude: 75.195, timezone: IST/UTC+5.5)
+at 9:10 AM in Karmala, India
 ```
 
 ### Basic Details Query
 ```
 Get the basic birth details for someone born on January 15, 1990, at 2:30 PM
-in New Delhi (28.6139°N, 77.2090°E, IST)
+in New Delhi, India
 ```
 
 ### Panchanga Details
 ```
 What are the Panchanga details (Tithi, Nakshatra, Yoga, Karana) for a person
-born on July 4, 1996, at 9:10 AM in Karmala, India (18.404°N, 75.195°E, IST)?
+born on July 4, 1996, at 9:10 AM in Karmala, India?
 ```
 
 ### Planetary Positions and Strengths
 ```
 Show me the planetary positions and Shadbala strengths for a birth on
-July 4, 1996, at 9:10 AM in Karmala, India (18.404°N, 75.195°E, UTC+5.5)
+July 4, 1996, at 9:10 AM in Karmala, India
 ```
 
 ### Vimshottari Dashas
 ```
 What is the current Mahadasha and upcoming Dasha periods for someone born on
-July 4, 1996, at 9:10 AM in Karmala, India (18.404°N, 75.195°E, IST)?
+July 4, 1996, at 9:10 AM in Karmala, India?
 ```
 
 ### Divisional Charts
 ```
 Get the Navamsa (D9) chart for a person born on July 4, 1996, at 9:10 AM
-in Karmala, India (18.404°N, 75.195°E, IST)
+in Karmala, India
 ```
 
 ### Comprehensive Analysis Questions
 ```
-Analyze the birth chart of Bhampu (born July 4, 1996, 9:10 AM, Karmala, India,
-18.404°N, 75.195°E, IST) and tell me about:
+Analyze the birth chart of Bhampu (born July 4, 1996, 9:10 AM, Karmala, India) and tell me about:
 - The ascendant and moon sign
 - The planetary strengths (Shadbala)
 - The current Dasha period
@@ -100,13 +109,15 @@ The server returns data in JSON format. Here's what you can expect:
   "name": "Bhampu",
   "date": "1996-07-04",
   "time": "09:10:00",
-  "place": "Karmala, India",
+  "place": "Karmala, Maharashtra, India",
   "latitude": 18.404,
   "longitude": 75.195,
   "timezone_offset": 5.5,
   "ayanamsha": "23.88..."
 }
 ```
+
+**Note:** Latitude, longitude, and timezone_offset are automatically geocoded from the location name.
 
 ### Panchanga Details Response
 ```json
@@ -148,41 +159,31 @@ The server returns data in JSON format. Here's what you can expect:
 }
 ```
 
-## Common Locations and Coordinates
+## Common Location Examples
 
-For convenience, here are coordinates for major Indian cities:
+You can use any of these location names with the server (automatic geocoding):
 
-| City | Latitude | Longitude |
-|------|----------|-----------|
-| Mumbai | 19.0760 | 72.8777 |
-| Delhi | 28.6139 | 77.2090 |
-| Bangalore | 12.9716 | 77.5946 |
-| Chennai | 13.0827 | 80.2707 |
-| Kolkata | 22.5726 | 88.3639 |
-| Pune | 18.5204 | 73.8567 |
-| Hyderabad | 17.3850 | 78.4867 |
-| Ahmedabad | 23.0225 | 72.5714 |
-| Jaipur | 26.9124 | 75.7873 |
-| Varanasi | 25.3176 | 82.9739 |
-
-## Timezone Reference
-
-Common timezone offsets:
-- **IST (India Standard Time)**: 5.5
-- **EST (Eastern Standard Time)**: -5 (or -4 during DST)
-- **PST (Pacific Standard Time)**: -8 (or -7 during DST)
-- **GMT/UTC**: 0
-- **CST (China Standard Time)**: 8
-- **JST (Japan Standard Time)**: 9
-- **AEDT (Australian Eastern Daylight Time)**: 11
+| City | Example Usage |
+|------|---------------|
+| Mumbai | "Mumbai", "Mumbai, India" |
+| Delhi | "Delhi", "New Delhi", "New Delhi, India" |
+| Bangalore | "Bangalore", "Bengaluru", "Bangalore, Karnataka" |
+| Chennai | "Chennai", "Chennai, Tamil Nadu" |
+| Kolkata | "Kolkata", "Kolkata, West Bengal" |
+| Pune | "Pune", "Pune, Maharashtra" |
+| Hyderabad | "Hyderabad", "Hyderabad, Telangana" |
+| Ahmedabad | "Ahmedabad", "Ahmedabad, Gujarat" |
+| Jaipur | "Jaipur", "Jaipur, Rajasthan" |
+| Varanasi | "Varanasi", "Varanasi, Uttar Pradesh" |
 
 ## Tips for Best Results
 
-1. **Always provide complete birth data**: Name, date, time, location coordinates, and timezone
-2. **Use decimal degrees** for latitude and longitude (not degrees/minutes/seconds)
-3. **Timezone offset** should be in decimal hours from UTC (e.g., 5.5 for IST, not 5:30)
-4. **Be specific** in your questions - ask for particular aspects of the chart
-5. **Interpret results** - Ask Claude to explain what the astrological data means
+1. **Always provide complete birth data**: Name, date, time, and location name
+2. **Use clear location names**: e.g., "Mumbai, India" or "New Delhi" for better geocoding accuracy
+3. **No need for coordinates**: The server automatically geocodes location names
+4. **No need for timezone**: Timezone is automatically detected from the location
+5. **Be specific** in your questions - ask for particular aspects of the chart
+6. **Interpret results** - Ask Claude to explain what the astrological data means
 
 ## Advanced Queries
 

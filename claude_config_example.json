@@ -5,7 +5,10 @@
       "args": [
         "/absolute/path/to/vedic_astrology_server.py"
       ],
-      "description": "Vedic Astrology MCP Server - Provides authentic astrological analysis using jyotishganit library"
+      "env": {
+        "GEOAPIFY_API_KEY": "your_geoapify_api_key_here"
+      },
+      "description": "Vedic Astrology MCP Server - Provides authentic astrological analysis using jyotishganit library with automatic location geocoding"
     }
   }
 }

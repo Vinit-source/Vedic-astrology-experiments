@@ -70,6 +70,7 @@ Complete D1-D60 divisional chart calculations:
 ### Prerequisites
 - Python 3.8 or higher
 - pip package manager
+- Geoapify API key (free tier available at [geoapify.com](https://www.geoapify.com/))
 
 ### Setup
 
@@ -87,6 +88,19 @@ pip install -r requirements.txt
 The main dependencies are:
 - `jyotishganit` - Professional Vedic astrology calculation library with NASA JPL ephemeris
 - `mcp` - Model Context Protocol SDK
+- `requests` - HTTP library for geocoding API calls
+
+3. **Set up Geoapify API key:**
+
+The server uses Geoapify's geocoding API to automatically convert location names to coordinates and timezone information.
+
+Get your free API key from [geoapify.com](https://www.geoapify.com/) and set it as an environment variable:
+
+```bash
+export GEOAPIFY_API_KEY="your_api_key_here"
+```
+
+Or add it to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) for persistence.
 
 ## Usage
 
@@ -95,6 +109,7 @@ The main dependencies are:
 The server communicates via stdio (standard input/output):
 
 ```bash
+export GEOAPIFY_API_KEY="your_api_key_here"
 python vedic_astrology_server.py
 ```
 
@@ -110,15 +125,20 @@ To use this server with Claude Desktop, add it to your Claude configuration file
   "mcpServers": {
     "vedic-astrology": {
       "command": "python",
-      "args": ["/absolute/path/to/vedic_astrology_server.py"]
+      "args": ["/absolute/path/to/vedic_astrology_server.py"],
+      "env": {
+        "GEOAPIFY_API_KEY": "your_geoapify_api_key_here"
+      }
     }
   }
 }
 ```
 
-Replace `/absolute/path/to/` with the actual path to the server file.
+Replace `/absolute/path/to/` with the actual path to the server file and `your_geoapify_api_key_here` with your Geoapify API key.
 
 ### Available Tools
+
+All tools now use **location-based input** - simply provide a location name (e.g., "Chennai", "New Delhi, India") and the server automatically geocodes it to get coordinates and timezone.
 
 #### 1. `calculate_complete_birth_chart`
 Returns a comprehensive birth chart with all astrological details including panchanga, planetary positions, divisional charts, dashas, and more.
@@ -133,15 +153,12 @@ Returns a comprehensive birth chart with all astrological details including panc
   "hour": 9,
   "minute": 10,
   "second": 0,
-  "latitude": 18.404,
-  "longitude": 75.195,
-  "timezone_offset": 5.5,
-  "location_name": "Karmala, India"
+  "location": "Karmala, India"
 }
 ```
 
 #### 2. `get_basic_details`
-Returns basic birth information including name, date, time, place, coordinates, timezone, and ayanamsha.
+Returns basic birth information including name, date, time, place, coordinates (auto-geocoded), timezone, and ayanamsha.
 
 #### 3. `get_panchanga_details`
 Returns Panchanga elements (Tithi, Nakshatra, Yoga, Karana, Vaara) and Avakhada details (Varna, Vashya, Yoni, Gan, Nadi).
@@ -159,23 +176,21 @@ Returns all divisional charts (D1-D60) with planetary positions in each chart.
 
 When connected to an LLM (like Claude), you can ask questions like:
 
-- "Calculate the birth chart for a person born on July 4, 1996, at 9:10 AM in Karmala, India (18.404°N, 75.195°E)"
-- "What is the current Mahadasha for someone born on..."
-- "Show me the planetary positions and strengths for..."
-- "What does the Navamsa chart show for..."
-- "Get the Panchanga details for a birth at..."
+- "Calculate the birth chart for a person born on July 4, 1996, at 9:10 AM in Karmala, India"
+- "What is the current Mahadasha for someone born on January 15, 1990, at 2:30 PM in New Delhi?"
+- "Show me the planetary positions and strengths for a birth in Chennai on March 1, 1985"
+- "What does the Navamsa chart show for someone born in Mumbai on..."
+- "Get the Panchanga details for a birth in Bangalore at..."
 
-## Timezone Reference
-
-Common timezone offsets from UTC:
-- **IST (India):** 5.5
-- **EST (US East):** -5 (or -4 during DST)
-- **PST (US West):** -8 (or -7 during DST)
-- **GMT/UTC:** 0
-- **CST (China):** 8
-- **JST (Japan):** 9
+**Note:** The server automatically geocodes location names to get precise coordinates and timezone information using Geoapify API.
 
 ## Technical Details
+
+### Geocoding
+- Automatic location-to-coordinates conversion via Geoapify API
+- Supports city names, addresses, and location descriptions
+- Auto-detects timezone from location
+- Handles DST (Daylight Saving Time) automatically
 
 ### Astronomical Accuracy
 - Uses NASA JPL DE421 ephemeris data via Skyfield

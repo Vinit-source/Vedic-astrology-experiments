@@ -12,9 +12,11 @@ This server provides tools to calculate and analyze Vedic birth charts, includin
 
 import asyncio
 import json
+import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import requests
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 from pydantic import BaseModel, Field
@@ -29,6 +31,102 @@ except ImportError:
 server = Server("vedic-astrology-server")
 
 
+class GeocodeError(Exception):
+    """Exception raised when geocoding fails."""
+    pass
+
+
+def geocode_location(location: str) -> Dict[str, float]:
+    """
+    Geocode a location using Geoapify API.
+
+    Args:
+        location: Location name (e.g., "Chennai", "New Delhi, India")
+
+    Returns:
+        Dictionary with 'lat', 'lon', and 'timezone_offset' keys
+
+    Raises:
+        GeocodeError: If location cannot be geocoded or API key is missing
+    """
+    api_key = os.getenv("GEOAPIFY_API_KEY")
+
+    if not api_key:
+        raise GeocodeError(
+            "GEOAPIFY_API_KEY environment variable not set. "
+            "Please set it to use location-based geocoding."
+        )
+
+    url = f"https://api.geoapify.com/v1/geocode/search?text={location}&format=json&apiKey={api_key}"
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        if not data.get("results"):
+            raise GeocodeError(
+                f"Location '{location}' not found. Please check the location name and try again."
+            )
+
+        # Get the first (best match) result
+        result = data["results"][0]
+
+        # Extract latitude and longitude
+        lat = result.get("lat")
+        lon = result.get("lon")
+
+        if lat is None or lon is None:
+            raise GeocodeError(
+                f"Could not extract coordinates for location '{location}'."
+            )
+
+        # Extract timezone offset
+        timezone_info = result.get("timezone", {})
+        offset_std = timezone_info.get("offset_STD")
+
+        if not offset_std:
+            raise GeocodeError(
+                f"Could not extract timezone information for location '{location}'."
+            )
+
+        # Convert offset from "+05:30" format to decimal hours (5.5)
+        offset_hours = parse_timezone_offset(offset_std)
+
+        return {
+            "lat": lat,
+            "lon": lon,
+            "timezone_offset": offset_hours,
+            "formatted_location": result.get("formatted", location)
+        }
+
+    except requests.RequestException as e:
+        raise GeocodeError(
+            f"Failed to geocode location '{location}': {str(e)}"
+        )
+
+
+def parse_timezone_offset(offset_str: str) -> float:
+    """
+    Parse timezone offset string to decimal hours.
+
+    Args:
+        offset_str: Timezone offset in format "+05:30" or "-08:00"
+
+    Returns:
+        Offset in decimal hours (e.g., 5.5 for "+05:30")
+    """
+    try:
+        # Remove '+' or '-' sign and split by ':'
+        sign = 1 if offset_str.startswith('+') else -1
+        offset_str = offset_str.lstrip('+-')
+        hours, minutes = map(int, offset_str.split(':'))
+
+        return sign * (hours + minutes / 60.0)
+    except (ValueError, AttributeError):
+        raise GeocodeError(f"Invalid timezone offset format: {offset_str}")
+
+
 class BirthData(BaseModel):
     """Birth data required for astrological calculations."""
     name: str = Field(description="Name of the person")
@@ -38,15 +136,34 @@ class BirthData(BaseModel):
     hour: int = Field(description="Hour of birth (0-23)")
     minute: int = Field(description="Minute of birth (0-59)")
     second: int = Field(default=0, description="Second of birth (0-59)")
-    latitude: float = Field(description="Latitude of birth place")
-    longitude: float = Field(description="Longitude of birth place")
-    timezone_offset: float = Field(description="Timezone offset from UTC in hours (e.g., 5.5 for IST)")
-    location_name: Optional[str] = Field(default=None, description="Name of birth place")
+    location: str = Field(description="Birth location (e.g., 'Chennai', 'New Delhi, India')")
+    # Internal fields populated by geocoding
+    latitude: Optional[float] = Field(default=None, description="Latitude (auto-populated from location)")
+    longitude: Optional[float] = Field(default=None, description="Longitude (auto-populated from location)")
+    timezone_offset: Optional[float] = Field(default=None, description="Timezone offset (auto-populated from location)")
+    location_name: Optional[str] = Field(default=None, description="Formatted location name")
 
 
 def parse_birth_data(arguments: Dict[str, Any]) -> BirthData:
-    """Parse and validate birth data from arguments."""
-    return BirthData(**arguments)
+    """
+    Parse and validate birth data from arguments.
+
+    Geocodes the location to get latitude, longitude, and timezone offset.
+    """
+    # Create initial birth data
+    birth_data = BirthData(**arguments)
+
+    # Geocode the location
+    try:
+        geo_data = geocode_location(birth_data.location)
+        birth_data.latitude = geo_data["lat"]
+        birth_data.longitude = geo_data["lon"]
+        birth_data.timezone_offset = geo_data["timezone_offset"]
+        birth_data.location_name = geo_data["formatted_location"]
+    except GeocodeError as e:
+        raise ValueError(f"Geocoding error: {str(e)}")
+
+    return birth_data
 
 
 def get_birth_chart(birth_data: BirthData):
@@ -92,18 +209,12 @@ async def list_tools() -> List[Tool]:
                     "hour": {"type": "integer", "description": "Hour of birth (0-23)"},
                     "minute": {"type": "integer", "description": "Minute of birth (0-59)"},
                     "second": {"type": "integer", "description": "Second of birth (0-59)", "default": 0},
-                    "latitude": {"type": "number", "description": "Latitude of birth place"},
-                    "longitude": {"type": "number", "description": "Longitude of birth place"},
-                    "timezone_offset": {
-                        "type": "number",
-                        "description": "Timezone offset from UTC in hours (e.g., 5.5 for IST, -5 for EST)"
-                    },
-                    "location_name": {
+                    "location": {
                         "type": "string",
-                        "description": "Name of birth place (optional)"
+                        "description": "Birth location name (e.g., 'Chennai', 'New Delhi, India', 'Mumbai'). The API will automatically geocode this to get coordinates and timezone."
                     }
                 },
-                "required": ["name", "year", "month", "day", "hour", "minute", "latitude", "longitude", "timezone_offset"]
+                "required": ["name", "year", "month", "day", "hour", "minute", "location"]
             }
         ),
         Tool(
@@ -122,12 +233,12 @@ async def list_tools() -> List[Tool]:
                     "hour": {"type": "integer", "description": "Hour of birth (0-23)"},
                     "minute": {"type": "integer", "description": "Minute of birth (0-59)"},
                     "second": {"type": "integer", "description": "Second of birth (0-59)", "default": 0},
-                    "latitude": {"type": "number", "description": "Latitude of birth place"},
-                    "longitude": {"type": "number", "description": "Longitude of birth place"},
-                    "timezone_offset": {"type": "number", "description": "Timezone offset from UTC in hours"},
-                    "location_name": {"type": "string", "description": "Name of birth place (optional)"}
+                    "location": {
+                        "type": "string",
+                        "description": "Birth location name (e.g., 'Chennai', 'New Delhi, India', 'Mumbai')"
+                    }
                 },
-                "required": ["name", "year", "month", "day", "hour", "minute", "latitude", "longitude", "timezone_offset"]
+                "required": ["name", "year", "month", "day", "hour", "minute", "location"]
             }
         ),
         Tool(
@@ -147,12 +258,12 @@ async def list_tools() -> List[Tool]:
                     "hour": {"type": "integer", "description": "Hour of birth (0-23)"},
                     "minute": {"type": "integer", "description": "Minute of birth (0-59)"},
                     "second": {"type": "integer", "description": "Second of birth (0-59)", "default": 0},
-                    "latitude": {"type": "number", "description": "Latitude of birth place"},
-                    "longitude": {"type": "number", "description": "Longitude of birth place"},
-                    "timezone_offset": {"type": "number", "description": "Timezone offset from UTC in hours"},
-                    "location_name": {"type": "string", "description": "Name of birth place (optional)"}
+                    "location": {
+                        "type": "string",
+                        "description": "Birth location name (e.g., 'Chennai', 'New Delhi, India', 'Mumbai')"
+                    }
                 },
-                "required": ["name", "year", "month", "day", "hour", "minute", "latitude", "longitude", "timezone_offset"]
+                "required": ["name", "year", "month", "day", "hour", "minute", "location"]
             }
         ),
         Tool(
@@ -172,12 +283,12 @@ async def list_tools() -> List[Tool]:
                     "hour": {"type": "integer", "description": "Hour of birth (0-23)"},
                     "minute": {"type": "integer", "description": "Minute of birth (0-59)"},
                     "second": {"type": "integer", "description": "Second of birth (0-59)", "default": 0},
-                    "latitude": {"type": "number", "description": "Latitude of birth place"},
-                    "longitude": {"type": "number", "description": "Longitude of birth place"},
-                    "timezone_offset": {"type": "number", "description": "Timezone offset from UTC in hours"},
-                    "location_name": {"type": "string", "description": "Name of birth place (optional)"}
+                    "location": {
+                        "type": "string",
+                        "description": "Birth location name (e.g., 'Chennai', 'New Delhi, India', 'Mumbai')"
+                    }
                 },
-                "required": ["name", "year", "month", "day", "hour", "minute", "latitude", "longitude", "timezone_offset"]
+                "required": ["name", "year", "month", "day", "hour", "minute", "location"]
             }
         ),
         Tool(
@@ -196,12 +307,12 @@ async def list_tools() -> List[Tool]:
                     "hour": {"type": "integer", "description": "Hour of birth (0-23)"},
                     "minute": {"type": "integer", "description": "Minute of birth (0-59)"},
                     "second": {"type": "integer", "description": "Second of birth (0-59)", "default": 0},
-                    "latitude": {"type": "number", "description": "Latitude of birth place"},
-                    "longitude": {"type": "number", "description": "Longitude of birth place"},
-                    "timezone_offset": {"type": "number", "description": "Timezone offset from UTC in hours"},
-                    "location_name": {"type": "string", "description": "Name of birth place (optional)"}
+                    "location": {
+                        "type": "string",
+                        "description": "Birth location name (e.g., 'Chennai', 'New Delhi, India', 'Mumbai')"
+                    }
                 },
-                "required": ["name", "year", "month", "day", "hour", "minute", "latitude", "longitude", "timezone_offset"]
+                "required": ["name", "year", "month", "day", "hour", "minute", "location"]
             }
         ),
         Tool(
@@ -222,12 +333,12 @@ async def list_tools() -> List[Tool]:
                     "hour": {"type": "integer", "description": "Hour of birth (0-23)"},
                     "minute": {"type": "integer", "description": "Minute of birth (0-59)"},
                     "second": {"type": "integer", "description": "Second of birth (0-59)", "default": 0},
-                    "latitude": {"type": "number", "description": "Latitude of birth place"},
-                    "longitude": {"type": "number", "description": "Longitude of birth place"},
-                    "timezone_offset": {"type": "number", "description": "Timezone offset from UTC in hours"},
-                    "location_name": {"type": "string", "description": "Name of birth place (optional)"}
+                    "location": {
+                        "type": "string",
+                        "description": "Birth location name (e.g., 'Chennai', 'New Delhi, India', 'Mumbai')"
+                    }
                 },
-                "required": ["name", "year", "month", "day", "hour", "minute", "latitude", "longitude", "timezone_offset"]
+                "required": ["name", "year", "month", "day", "hour", "minute", "location"]
             }
         ),
     ]
