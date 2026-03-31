@@ -44,9 +44,13 @@ Thumbs.db
 .local/share/jyotishganit/
 Library/Application Support/jyotishganit/
 
-# Logs
+# Test outputs
 *.log
 
-# Test outputs
-*.json
+# Test output JSON files (birth charts)
+birth_chart*.json
+test_*.json
+
+# But keep configuration examples
+!claude_config_example.json
 !package.json

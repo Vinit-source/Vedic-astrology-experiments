@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "vedic-astrology": {
+      "command": "python",
+      "args": [
+        "/absolute/path/to/vedic_astrology_server.py"
+      ],
+      "description": "Vedic Astrology MCP Server - Provides authentic astrological analysis using jyotishganit library"
+    }
+  }
+}

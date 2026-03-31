@@ -1,19 +1,29 @@
 {
-  "name": "vedic-astrology-experiments",
+  "name": "vedic-astrology-mcp-server",
   "version": "1.0.0",
-  "description": "An experiment to make Vedic astrology digitally accessible.",
-  "main": "index.js",
+  "description": "MCP server for authentic Vedic astrology calculations using jyotishganit library",
+  "main": "vedic_astrology_server.py",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup": "bash setup.sh",
+    "test": "python test_server.py"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Vinit-source/Vedic-astrology-experiments.git"
   },
-  "keywords": [],
+  "keywords": [
+    "vedic-astrology",
+    "jyotish",
+    "mcp-server",
+    "astrology",
+    "birth-chart",
+    "panchanga",
+    "vimshottari-dasha",
+    "divisional-charts",
+    "planets"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Vinit-source/Vedic-astrology-experiments/issues"
   },
