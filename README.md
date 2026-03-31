@@ -27,8 +27,6 @@ This MCP server provides comprehensive Vedic astrology tools including:
 - **Gan** - Temperament (Deva/Manushya/Rakshasa)
 - **Nadi** - Pulse/energy type
 - **Sign** - Moon sign (Rashi)
-- **Sign Lord** - Ruler of the Moon sign
-- **Nakshatra-Charan** - Birth star with quarter
 
 ### Planetary Analysis
 - Positions of all 9 Vedic planets (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu)
@@ -113,28 +111,59 @@ export GEOAPIFY_API_KEY="your_api_key_here"
 python vedic_astrology_server.py
 ```
 
-### Using with Claude Desktop
+### Using with VS Code
 
-To use this server with Claude Desktop, add it to your Claude configuration file:
+To use this server with VS Code, add it to your VS Code MCP configuration file:
 
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%/Claude/claude_desktop_config.json`
+**macOS:** `~/Library/Application Support/Code/User/mcp.json`
+
+The recommended configuration uses `uv` to manage Python environments reliably:
 
 ```json
 {
-  "mcpServers": {
+  "servers": {
     "vedic-astrology": {
-      "command": "python",
-      "args": ["/absolute/path/to/vedic_astrology_server.py"],
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "/absolute/path/to/vedic_astrology_server.py"
+      ],
       "env": {
         "GEOAPIFY_API_KEY": "your_geoapify_api_key_here"
-      }
+      },
+      "description": "Vedic Astrology MCP Server - Provides authentic astrological analysis using jyotishganit library with automatic location geocoding"
     }
   }
 }
 ```
 
-Replace `/absolute/path/to/` with the actual path to the server file and `your_geoapify_api_key_here` with your Geoapify API key.
+Replace `/absolute/path/to/vedic_astrology_server.py` with the full path to the server file and `your_geoapify_api_key_here` with your Geoapify API key.
+
+### Alternative configuration using direct Python command:
+
+```json
+{
+  "servers": {
+    "vedic-astrology": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "/absolute/path/to/vedic_astrology_server.py"
+      ],
+      "env": {
+        "GEOAPIFY_API_KEY": "your_geoapify_api_key_here"
+      },
+      "description": "Vedic Astrology MCP Server - Provides authentic astrological analysis using jyotishganit library with automatic location geocoding"
+    }
+  }
+}
+```
+
+To use this server with Claude Desktop, add it to your Claude configuration file using the above config.
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%/Claude/claude_desktop_config.json`
 
 ### Available Tools
 
@@ -179,8 +208,8 @@ When connected to an LLM (like Claude), you can ask questions like:
 - "Calculate the birth chart for a person born on July 4, 1996, at 9:10 AM in Karmala, India"
 - "What is the current Mahadasha for someone born on January 15, 1990, at 2:30 PM in New Delhi?"
 - "Show me the planetary positions and strengths for a birth in Chennai on March 1, 1985"
-- "What does the Navamsa chart show for someone born in Mumbai on..."
-- "Get the Panchanga details for a birth in Bangalore at..."
+- "What does the Navamsa chart show for me. My birth date is..."
+- "Get the Panchanga details for Vamshi born in Bangalore at..."
 
 **Note:** The server automatically geocodes location names to get precise coordinates and timezone information using Geoapify API.
 
@@ -249,6 +278,27 @@ print(f"Nakshatra: {chart.panchanga.nakshatra}")
 print(f"Tithi: {chart.panchanga.tithi}")
 ```
 
+## Troubleshooting
+
+### MCP Server Won't Start
+
+**Issue:** `spawn python ENOENT` error in VS Code
+
+**Solution:** Use absolute paths to Python interpreters. VS Code MCP host may not resolve generic commands like `python`. Use:
+- `uv` (if installed via Homebrew or officially)
+- `/opt/homebrew/bin/python3` (macOS with Homebrew)
+- `/usr/local/bin/python3` (macOS)
+- The included `run_vedic_mcp_uv.sh` launcher script (recommended)
+
+### Geocoding Errors
+
+**Issue:** `GEOAPIFY_API_KEY environment variable not set`
+
+**Verify:**
+1. You have a Geoapify API key from [geoapify.com](https://www.geoapify.com/)
+2. The key is correctly set in your MCP configuration's `env` section
+3. Test by running: `export GEOAPIFY_API_KEY="your_key" && python vedic_astrology_server.py --check`
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
@@ -267,7 +317,7 @@ ISC License
 
 ## Acknowledgments
 
-- **jyotishganit** - Professional Vedic astrology library by [northtara](https://github.com/northtara)
+- **[jyotishganit](https://github.com/northtara/jyotishganit)** - Professional Vedic astrology library by [northtara](https://github.com/northtara)
 - **MCP** - Model Context Protocol by Anthropic
 - Built with reverence for the ancient science of Jyotisha
 

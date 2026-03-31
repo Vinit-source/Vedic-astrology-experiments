@@ -392,10 +392,8 @@ async def call_tool(name: str, arguments: Any) -> List[TextContent]:
                 "karana": chart.panchanga.karana,
                 "vaara": chart.panchanga.vaara,
                 "moon_sign": moon.sign,
-                "moon_sign_lord": moon.sign_lord,
                 "moon_nakshatra": moon.nakshatra,
                 "ascendant_sign": chart.d1_chart.houses[0].sign,
-                "ascendant_lord": chart.d1_chart.houses[0].sign_lord
             }
 
             # Add Avakhada details if available
@@ -429,7 +427,6 @@ async def call_tool(name: str, arguments: Any) -> List[TextContent]:
                     "nakshatra": planet.nakshatra,
                     "pada": planet.pada,
                     "house": planet.house,
-                    "sign_lord": planet.sign_lord,
                 }
 
                 # Add dignities if available
@@ -553,7 +550,6 @@ def extract_chart_data(chart_obj, chart_name: str) -> Dict:
         house_info = {
             "house_number": i,
             "sign": house.sign,
-            "sign_lord": house.sign_lord,
             "occupants": [p.celestial_body for p in house.occupants] if hasattr(house, 'occupants') else []
         }
         chart_data["houses"].append(house_info)
