@@ -1,0 +1,21 @@
+{
+  "name": "vedic-astrology-experiments",
+  "version": "1.0.0",
+  "description": "An experiment to make Vedic astrology digitally accessible.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vinit-source/Vedic-astrology-experiments.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Vinit-source/Vedic-astrology-experiments/issues"
+  },
+  "homepage": "https://github.com/Vinit-source/Vedic-astrology-experiments#readme"
+}
